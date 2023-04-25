@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -97,10 +98,55 @@ public class Bot : MonoBehaviour
         Seek(chosenSpot);
     }
 
+    void CleverHide()
+    {
+        // Find Closest hiding spot
+        float dist = Mathf.Infinity;
+        Vector3 chosenSpot = Vector3.zero;
+        Vector3 chosenDir = Vector3.zero;
+        GameObject chosenGO = World.Instance.GetHidingSpots()[0];
+
+        for (int i = 0; i < World.Instance.GetHidingSpots().Length; i++)
+        {
+            Vector3 hideDir = World.Instance.GetHidingSpots()[i].transform.position - target.transform.position;  // Vector from the Cop to the Tree hiding spot
+            Vector3 hidePos = World.Instance.GetHidingSpots()[i].transform.position + hideDir.normalized * 10;  // Vector to hiding spot behind tree hiding spot
+
+            if (Vector3.Distance(this.transform.position, hidePos) < dist)
+            {
+                chosenSpot = hidePos;
+                chosenDir = hideDir;
+                chosenGO = World.Instance.GetHidingSpots()[i];
+                dist = Vector3.Distance(this.transform.position, hidePos);
+            }
+        }
+
+        // Raycast to a spot behind the collider
+        Collider hidCol = chosenGO.GetComponent<Collider>();
+        Ray backRay = new Ray(chosenSpot, -chosenDir.normalized);  // casts ray back to the collider from the other side
+        RaycastHit info;
+        float distance = 100.0f;
+        hidCol.Raycast(backRay, out info, distance);  // Hit point at the BACK of the collider stored inside info
+
+        Seek(info.point + chosenDir.normalized * 3);
+    }
+
+    bool CanSeeTarget()
+    {
+        RaycastHit raycastInfo;
+        Vector3 rayToTarget = target.transform.position - this.transform.position;
+        if(Physics.Raycast(this.transform.position, rayToTarget, out raycastInfo))
+        {
+            if (raycastInfo.transform.gameObject.tag == "cop")
+                return true;
+        }
+        return false;
+    }
+
     // Update is called once per frame
     void Update()
     {
         // Flee(target.transform.position);
-        Hide();
+        if(CanSeeTarget())
+            CleverHide();
     }
 }
