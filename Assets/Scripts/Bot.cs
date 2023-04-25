@@ -9,6 +9,7 @@ public class Bot : MonoBehaviour
     NavMeshAgent agent;
     public GameObject target;
     Drive ds;
+    bool coolDown = false;
 
     Vector3 wanderTarget = Vector3.zero;
 
@@ -148,6 +149,7 @@ public class Bot : MonoBehaviour
     {
         Vector3 rayToTarget = this.transform.position - target.transform.position;
         float angle = Vector3.Angle(target.transform.forward, rayToTarget);
+        float distance = rayToTarget.magnitude;
 
         if (angle < 60)
             return true;
@@ -155,11 +157,16 @@ public class Bot : MonoBehaviour
 
     }
 
-    bool coolDown = false;
-
     void BehaviorCooldown()
     {
         coolDown = false;
+    }
+
+    bool TargetInRange()
+    {
+        if (Vector3.Distance(this.transform.position, target.transform.position) < 10)
+            return true;
+        return false;
     }
 
     // Update is called once per frame
@@ -168,7 +175,11 @@ public class Bot : MonoBehaviour
         // Flee(target.transform.position);
         if (!coolDown)
         {
-            if (CanSeeTarget() && CanSeeMe())
+            if (!TargetInRange())
+            {
+                Wander();
+            }
+            else if (CanSeeTarget() && CanSeeMe())
             {
                 CleverHide();
                 coolDown = true;
@@ -177,5 +188,6 @@ public class Bot : MonoBehaviour
             else
                 Pursue();
         }
+        Wander();
     }
 }
